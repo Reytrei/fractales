@@ -7,22 +7,31 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # --- FUNCIONES MATEMÁTICAS (Idénticas a tu script local) ---
-def texto_a_parametro(texto):
+def procesar_semilla(texto):
     hash_obj = hashlib.sha256(texto.encode('utf-8'))
     hash_hex = hash_obj.hexdigest()
     
+    # 1. Parámetro C (Posiciones 0-15 del hash)
     parte_real = int(hash_hex[:8], 16)
-    parte_imag = int(hash_hex[32:40], 16)
-    
+    parte_imag = int(hash_hex[8:16], 16)
     max_val = 0xFFFFFFFF
     real_norm = (parte_real / max_val) * 3.0 - 1.5
     imag_norm = (parte_imag / max_val) * 3.0 - 1.5
+    c = complex(real_norm, imag_norm)
     
-    return complex(real_norm, imag_norm)
+    # 2. Exponente o Simetría (Posiciones 16-19 del hash)
+    # Genera un número entero entre 2 y 6
+    exponente = 2 + (int(hash_hex[16:20], 16) % 5)
+    
+    # 3. Paleta de colores (Posiciones 20-23 del hash)
+    paletas = ['twilight_shifted', 'magma', 'inferno', 'plasma', 'ocean', 'cubehelix', 'turbo', 'gist_earth']
+    idx_color = int(hash_hex[20:24], 16) % len(paletas)
+    cmap = paletas[idx_color]
+    
+    return c, exponente, cmap
 
 @st.cache_data 
-def generar_julia_racional(c_real, c_imag, width=800, height=800, max_iter=256):
-    # Reconstruimos el número complejo de forma segura dentro de la función
+def generar_julia_racional(c_real, c_imag, exponente, width=800, height=800, max_iter=256):
     c = complex(c_real, c_imag) 
     
     xmin, xmax = -2.5, 2.5
@@ -34,8 +43,6 @@ def generar_julia_racional(c_real, c_imag, width=800, height=800, max_iter=256):
     X, Y = np.meshgrid(x, y)
     Z = X + 1j * Y
 
-    # ... (El resto del bucle for se mantiene exactamente igual) ...
-
     smooth_iter = np.zeros(Z.shape, dtype=float)
     active = np.ones(Z.shape, dtype=bool)
 
@@ -43,14 +50,17 @@ def generar_julia_racional(c_real, c_imag, width=800, height=800, max_iter=256):
         Z_act = Z[active]
         Z_act[Z_act == 0] = 1e-10 
         
-        Z_new = Z_act**2 + (c / Z_act)
+        # APLICAMOS EL NUEVO EXPONENTE DINÁMICO
+        Z_new = Z_act**exponente + (c / Z_act)
         Z[active] = Z_new
         
         escaped_local = np.abs(Z_new) > escape_radius
         
         if np.any(escaped_local):
             z_esc = Z_new[escaped_local]
-            smooth_val = (i + 1) - np.log2(np.log(np.abs(z_esc)))
+            
+            # EL SUAVIZADO AHORA DEPENDE DEL EXPONENTE MATEMÁTICO
+            smooth_val = (i + 1) - np.log(np.log(np.abs(z_esc))) / np.log(exponente)
             
             active_indices = np.where(active)
             esc_idx_x = active_indices[0][escaped_local]
@@ -72,18 +82,22 @@ st.markdown("Introduce una semilla (tu seudónimo, un concepto matemático, etc.
 semilla = st.text_input("Palabra Semilla:", "Atractor Extraño")
 
 if semilla:
-    # Procesamiento
-    c = texto_a_parametro(semilla)
-    st.write(f"**Parámetro $c$ generado:** `{c.real:.4f} + {c.imag:.4f}i`")
+    # 1. Obtenemos todas las variables de la semilla
+    c, exponente, cmap_elegido = procesar_semilla(semilla)
     
-    with st.spinner("Calculando sistema dinámico..."):
-        # Pasamos los floats individuales en lugar del objeto complex
-        matriz_fractal, limites = generar_julia_racional(c.real, c.imag)
+    # Mostramos los datos matemáticos al usuario
+    col1, col2 = st.columns(2)
+    col1.write(f"**Constante $c$:** `{c.real:.4f} + {c.imag:.4f}i`")
+    col2.write(f"**Grado polinómico:** $z^{exponente}$")
+    st.write(f"**Paleta cromática asignada:** `{cmap_elegido}`")
     
-    # Renderizado
+    with st.spinner("Calculando sistema dinámico de alta dimensión..."):
+        # 2. Pasamos el exponente a la caché
+        matriz_fractal, limites = generar_julia_racional(c.real, c.imag, exponente)
+    
     fig, ax = plt.subplots(figsize=(8, 8))
-    ax.imshow(matriz_fractal, cmap='twilight_shifted', extent=limites, origin='lower')
+    # 3. Aplicamos la paleta de color única
+    ax.imshow(matriz_fractal, cmap=cmap_elegido, extent=limites, origin='lower')
     ax.axis('off')
     
-    # Mostrar el gráfico en Streamlit
     st.pyplot(fig)
