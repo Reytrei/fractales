@@ -74,12 +74,24 @@ def generar_julia_racional(c_real, c_imag, exponente, width=800, height=800, max
 
 # --- INTERFAZ DE USUARIO (STREAMLIT) ---
 st.set_page_config(page_title="Generador de Fractales", layout="centered")
+hide_streamlit_style = """
+    <style>
+    /* Oculta el menú principal de la esquina superior derecha (hamburguesa) */
+    #MainMenu {visibility: hidden;}
+    
+    /* Oculta el pie de página ('Made with Streamlit') */
+    footer {visibility: hidden;}
+    
+    /* Opcional: Oculta la barra superior decorativa */
+    header {visibility: hidden;}
+    </style>
+"""
 
-st.title("Fractales Criptográficos")
-st.markdown("Introduce una semilla (tu seudónimo, un concepto matemático, etc.) para generar un Atractor de Julia único.")
+st.title("Maquina Generadora de Fractales: De palabras a imagenes")
+st.markdown("Introduce una semilla (tu nombre, un poema, un concepto matemático) para generar un atractor de Julia único.")
 
 # Input del usuario
-semilla = st.text_input("Palabra Semilla:", "Atractor Extraño")
+semilla = st.text_input("Palabra Semilla:", "Atractor de Julia")
 
 if semilla:
     # 1. Obtenemos todas las variables de la semilla
@@ -91,7 +103,7 @@ if semilla:
     col2.write(f"**Grado polinómico:** $z^{exponente}$")
     st.write(f"**Paleta cromática asignada:** `{cmap_elegido}`")
     
-    with st.spinner("Calculando sistema dinámico de alta dimensión..."):
+    with st.spinner("Calculando sistema dinámico..."):
         # 2. Pasamos el exponente a la caché
         matriz_fractal, limites = generar_julia_racional(c.real, c.imag, exponente)
     
