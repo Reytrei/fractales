@@ -74,18 +74,25 @@ def generar_julia_racional(c_real, c_imag, exponente, width=800, height=800, max
 
 # --- INTERFAZ DE USUARIO (STREAMLIT) ---
 st.set_page_config(page_title="Generador de Fractales", layout="centered")
+
 hide_streamlit_style = """
     <style>
-    /* Oculta el menú principal de la esquina superior derecha (hamburguesa) */
+    /* 1. Oculta el menú principal de la esquina superior derecha */
     #MainMenu {visibility: hidden;}
     
-    /* Oculta el pie de página ('Made with Streamlit') */
+    /* 2. Oculta el pie de página ('Made with Streamlit') */
     footer {visibility: hidden;}
     
-    /* Opcional: Oculta la barra superior decorativa */
-    header {visibility: hidden;}
+    /* 3. Oculta completamente el encabezado superior (donde sale 'Created by' y tu avatar de GitHub) */
+    [data-testid="stHeader"] {display: none;}
+    
+    /* 4. Oculta la barra de herramientas flotante inyectada por Streamlit Cloud */
+    [data-testid="stToolbar"] {visibility: hidden;}
     </style>
 """
+
+
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 st.title("Maquina Generadora de Fractales: De palabras a imagenes")
 st.markdown("Introduce una semilla (tu nombre, un poema, un concepto matemático) para generar un atractor de Julia único.")
